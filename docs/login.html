@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login • Referral App</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <div><a href="./index.html"><strong>Referral</strong></a></div>
+      <div class="links">
+        <a href="./register.html">Register</a>
+        <a href="./login.html">Login</a>
+      </div>
+    </nav>
+
+    <div class="card" style="max-width:520px; margin:0 auto;">
+      <h2>Welcome back</h2>
+      <p class="small">Use your phone and password to login.</p>
+      <div id="msg"></div>
+      <form id="form" style="margin-top:12px;" onsubmit="return false;">
+        <div>
+          <label for="phone">Phone Number</label>
+          <input id="phone" class="input" placeholder="07XXXXXXXX" required />
+        </div>
+        <div style="margin-top:10px;">
+          <label for="password">Password</label>
+          <input id="password" type="password" class="input" placeholder="••••••••" required />
+        </div>
+        <div class="row" style="margin-top:14px; justify-content:space-between;">
+          <button class="btn btn-secondary" onclick="window.location.href='./register.html'">Create account</button>
+          <button class="btn btn-primary" id="submit">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<script>
+  document.getElementById('submit').addEventListener('click', async () => {
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+    const msg = document.getElementById('msg');
+    msg.textContent='';
+    try {
+      const data = await RefAPI.api('/api/auth/login', { method:'POST', auth:false, body:{ phone, password } });
+      RefAPI.setToken(data.token);
+      window.location.href = './dashboard.html';
+    } catch (e){ msg.innerHTML = `<div class='alert error'>${e.message}</div>`; }
+  });
+</script>
+</body>
+</html>

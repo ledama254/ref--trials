@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Referral App</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <div><strong>Referral</strong> <span class="badge">Static</span></div>
+      <div class="links">
+        <a href="./index.html">Home</a>
+        <a href="./register.html">Register</a>
+        <a href="./login.html">Login</a>
+        <a href="./dashboard.html" data-dash-link>Dashboard</a>
+        <a href="#" data-logout>Logout</a>
+      </div>
+    </nav>
+
+    <section class="hero card">
+      <h1>Earn KES 100 for every friend you invite</h1>
+      <p class="small">This static site talks to your backend API via CORS.</p>
+      <div class="row" style="justify-content:center; gap:12px; margin-top:16px;">
+        <a class="btn btn-primary" href="./register.html">Get Started</a>
+        <a class="btn" href="./login.html">I have an account</a>
+      </div>
+    </section>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>How it works</h3>
+        <ol class="small">
+          <li>Register with your phone and password.</li>
+          <li>Activate your account (mock STK in dev).</li>
+          <li>Share your referral code; earn bonuses.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Backend URL</h3>
+        <p class="small">Set your backend in <code>docs/config.js</code>:
+        <br/>window.APP_CONFIG = { BACKEND_URL: "https://api.yourdomain.com" };</p>
+      </div>
+    </div>
+
+    <p class="footer small">Hosted on GitHub Pages • Backend required (Render/Server)</p>
+  </div>
+</body>
+</html>

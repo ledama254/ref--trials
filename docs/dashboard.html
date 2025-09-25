@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard • Referral App</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <div><a href="./index.html"><strong>Referral</strong></a></div>
+      <div class="links">
+        <a href="./dashboard.html">Dashboard</a>
+        <a href="./activate.html">Activate</a>
+        <a href="#" data-logout>Logout</a>
+      </div>
+    </nav>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Balances</h2>
+        <div id="balances" class="small"></div>
+      </div>
+      <div class="card">
+        <h2>Referral Code</h2>
+        <div class="row" style="justify-content:space-between;">
+          <div id="refcode" class="badge">—</div>
+          <button class="btn" id="copy">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px;">
+      <div class="card">
+        <h3>Deposit</h3>
+        <div class="row">
+          <input id="depAmount" class="input" placeholder="Amount" />
+          <button class="btn btn-primary" id="deposit">Deposit</button>
+        </div>
+        <div id="depMsg" style="margin-top:8px;"></div>
+      </div>
+      <div class="card">
+        <h3>Withdraw</h3>
+        <div class="row">
+          <input id="wdAmount" class="input" placeholder="Amount" />
+          <button class="btn btn-primary" id="withdraw">Withdraw</button>
+        </div>
+        <div id="wdMsg" style="margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px;">
+      <div class="card">
+        <h3>Referrals</h3>
+        <table class="table" id="reftable">
+          <thead><tr><th>Name</th><th>Joined</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Notifications</h3>
+        <ul id="notes" class="small"></ul>
+      </div>
+    </div>
+
+  </div>
+<script>
+  RefAPI.requireAuth();
+
+  async function load(){
+    try{
+      const data = await RefAPI.api('/api/users/dashboard');
+      document.getElementById('refcode').textContent = data.referralCode;
+      const b = data.balances;
+      document.getElementById('balances').innerHTML = `
+        Deposit Total: <strong>KES ${b.depositTotal}</strong><br/>
+        Earned Money: <strong>KES ${b.earnedMoney}</strong><br/>
+        Withdrawable: <strong>KES ${b.withdrawable}</strong>`;
+
+      const tbody = document.querySelector('#reftable tbody');
+      tbody.innerHTML = '';
+      (data.referrals || []).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.fullName}</td><td>${new Date(r.joinedAt).toLocaleString()}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      const notes = document.getElementById('notes');
+      notes.innerHTML = '';
+      (data.notifications || []).forEach(n => {
+        const li = document.createElement('li');
+        li.textContent = n.message;
+        notes.appendChild(li);
+      });
+    } catch(e){ alert(e.message); }
+  }
+
+  document.getElementById('copy').addEventListener('click', async () => {
+    const code = document.getElementById('refcode').textContent;
+    try{ await navigator.clipboard.writeText(code); alert('Copied'); } catch{}
+  });
+
+  document.getElementById('deposit').addEventListener('click', async () => {
+    const amount = Number(document.getElementById('depAmount').value);
+    const el = document.getElementById('depMsg');
+    el.textContent='';
+    try{
+      const res = await RefAPI.api('/api/users/deposit', { method:'POST', body:{ amount } });
+      el.innerHTML = `<div class='alert success'>${res.message || 'Deposit initiated'}</div>`;
+    } catch(e){ el.innerHTML = `<div class='alert error'>${e.message}</div>`; }
+  });
+
+  document.getElementById('withdraw').addEventListener('click', async () => {
+    const amount = Number(document.getElementById('wdAmount').value);
+    const el = document.getElementById('wdMsg');
+    el.textContent='';
+    try{
+      const res = await RefAPI.api('/api/users/withdraw', { method:'POST', body:{ amount } });
+      el.innerHTML = `<div class='alert success'>${res.message || 'Withdrawal requested'}</div>`;
+    } catch(e){ el.innerHTML = `<div class='alert error'>${e.message}</div>`; }
+  });
+
+  load();
+</script>
+</body>
+</html>
