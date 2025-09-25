@@ -1,0 +1,80 @@
+// Prisma schema defining core data model for referral platform
+// - Users with referralCode and referrer relation
+// - Transactions for deposits, withdrawals, activations
+// - Referral relations and events
+// - Settings to allow admin overrides
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  fullName         String
+  phone            String   @unique
+  passwordHash     String
+  profileImageUrl  String?
+
+  referralCode     String   @unique // 8-digit code
+  referrerCode     String?         // code used to join, references another user's referralCode
+  referrer         User?    @relation("UserReferrals", fields: [referrerCode], references: [referralCode])
+  referrals        User[]   @relation("UserReferrals")
+
+  isActive         Boolean  @default(false)
+  totalDeposits    Int      @default(0)
+  totalEarnings    Int      @default(0) // earnings from referrals (KES)
+  totalWithdrawals Int      @default(0)
+
+  level            String   @default("Starter") // Starter, Pro, Leader
+
+  transactions     Transaction[]
+  notifications    Notification[]
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  type        TransactionType
+  amount      Int      // KES cents can be represented in Int if needed; here using whole KES
+  status      TxStatus @default(PENDING)
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  metadata    Json?
+}
+
+enum TransactionType {
+  ACTIVATION
+  REACTIVATION
+  DEPOSIT
+  WITHDRAWAL
+}
+
+enum TxStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  message   String
+  read      Boolean  @default(false)
+}
+
+model Setting {
+  id                 Int     @id @default(1)
+  referralBonusKES   Int     @default(100)
+  activationFeeKES   Int     @default(300)
+  withdrawDay        String  @default("Friday")
+}
