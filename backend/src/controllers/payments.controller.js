@@ -1,11 +1,30 @@
 import { prisma } from '../db/prisma.js';
 
-// Public callback used by M-Pesa (or mock) to confirm STK push results
+// Public callback used by M-Pesa to confirm STK push results
 export async function mpesaCallback(req, res) {
   try {
-    const { txId, resultCode, resultDesc, kind } = req.body || {};
-
+    // Prefer txId from query string (we add it when initiating STK)
+    const txId = req.query?.txId || req.body?.txId;
+    const kind = req.query?.kind || req.body?.kind;
     if (!txId) return res.status(400).json({ error: 'Missing txId' });
+
+    // Parse Daraja payload shape
+    // STK (C2B): { Body: { stkCallback: { ResultCode, ResultDesc, ... } } }
+    // B2C: { Result: { ResultCode, ResultDesc, ... } }
+    let resultCode = req.body?.ResultCode ?? req.body?.resultCode;
+    let resultDesc = req.body?.ResultDesc ?? req.body?.resultDesc;
+    const stk = req.body?.Body?.stkCallback;
+    const b2c = req.body?.Result;
+    let isB2C = false;
+    if (stk) {
+      resultCode = stk.ResultCode;
+      resultDesc = stk.ResultDesc;
+    }
+    if (b2c) {
+      resultCode = b2c.ResultCode;
+      resultDesc = b2c.ResultDesc;
+      isB2C = true;
+    }
 
     const success = String(resultCode) === '0';
 
@@ -19,7 +38,7 @@ export async function mpesaCallback(req, res) {
     const user = await prisma.user.findUnique({ where: { id: tx.userId } });
 
     if (success) {
-      if (tx.type === 'ACTIVATION' || tx.type === 'REACTIVATION') {
+      if (!isB2C && (tx.type === 'ACTIVATION' || tx.type === 'REACTIVATION')) {
         await prisma.user.update({ where: { id: user.id }, data: { isActive: true, totalDeposits: { increment: tx.amount } } });
 
         // If activation and user had referrer, award referrer 100 KES
@@ -40,8 +59,17 @@ export async function mpesaCallback(req, res) {
         }
       }
 
-      if (tx.type === 'DEPOSIT') {
+      if (!isB2C && tx.type === 'DEPOSIT') {
         await prisma.user.update({ where: { id: user.id }, data: { totalDeposits: { increment: tx.amount } } });
+      }
+
+      // B2C success -> finalize withdrawal
+      if (isB2C && tx.type === 'WITHDRAWAL') {
+        await prisma.user.update({ where: { id: user.id }, data: { totalWithdrawals: { increment: tx.amount } } });
+        const updated = await prisma.user.findUnique({ where: { id: user.id } });
+        if (updated.totalWithdrawals > 2000) {
+          await prisma.user.update({ where: { id: user.id }, data: { isActive: false } });
+        }
       }
     }
 
