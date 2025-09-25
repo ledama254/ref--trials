@@ -4,11 +4,11 @@ import { usePathname } from 'next/navigation';
 
 const items = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/dashboard/referrals', label: 'Referrals' },
-  { href: '/dashboard/profile', label: 'Profile' },
-  { href: '/dashboard/deposit', label: 'Deposit' },
-  { href: '/dashboard/withdraw', label: 'Withdraw' },
-  { href: '/dashboard/notifications', label: 'Notifications' },
+  { href: '/dashboard#referrals', label: 'Referrals' },
+  { href: '/dashboard#profile', label: 'Profile' },
+  { href: '/dashboard#deposit', label: 'Deposit' },
+  { href: '/dashboard#withdraw', label: 'Withdraw' },
+  { href: '/dashboard#notifications', label: 'Notifications' },
 ];
 
 export default function Sidebar() {

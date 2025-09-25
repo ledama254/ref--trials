@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma.js';
 
 export async function getAllUsers(_req, res) {
   const users = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });

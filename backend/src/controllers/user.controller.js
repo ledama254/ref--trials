@@ -1,8 +1,7 @@
 import dayjs from 'dayjs';
-import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
 import { Payments } from '../services/payments.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma.js';
 
 export async function getMe(req, res) {
   const user = await prisma.user.findUnique({ where: { id: req.user.id } });
@@ -28,6 +27,8 @@ export async function getDashboard(req, res) {
     transactions,
     notifications,
     level: user.level,
+    referralCode: user.referralCode,
+    phone: user.phone,
   });
 }
 
@@ -43,11 +44,32 @@ export async function getNotifications(req, res) {
 
 export async function deposit(req, res) {
   try {
-    const amount = Number(req.body.amount || 0);
-    if (amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+    const Body = z.object({ amount: z.number().int().positive() });
+    const parsed = Body.safeParse({ amount: Number(req.body.amount) });
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid amount' });
+    const amount = parsed.data.amount;
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
+    // Determine activation fee from settings/env (for reactivation)
+    let activationFee = 300;
+    try {
+      const setting = await prisma.setting.findFirst();
+      if (setting?.activationFeeKES) activationFee = setting.activationFeeKES;
+    } catch {}
+    activationFee = Number(process.env.ACTIVATION_FEE_KES || activationFee);
+
+    // If user is inactive, require exact activation fee to reactivate
+    if (!user.isActive) {
+      if (amount !== activationFee) {
+        return res.status(400).json({ error: `Your account is not active. Deposit KES ${activationFee} to reactivate.` });
+      }
+      const tx = await prisma.transaction.create({ data: { type: 'REACTIVATION', amount, status: 'PENDING', userId: user.id } });
+      const payRes = await Payments.initiateSTK({ phone: user.phone, amount, metadata: { txId: tx.id, kind: 'REACTIVATION' } });
+      return res.json({ message: 'Reactivation STK push initiated', checkoutRequestID: payRes.checkoutRequestID });
+    }
+
+    // Normal deposit path
     const tx = await prisma.transaction.create({ data: { type: 'DEPOSIT', amount, status: 'PENDING', userId: user.id } });
     const payRes = await Payments.initiateSTK({ phone: user.phone, amount, metadata: { txId: tx.id, kind: 'DEPOSIT' } });
 
@@ -67,8 +89,10 @@ export async function withdraw(req, res) {
       return res.status(400).json({ error: 'Withdrawals are only available on Fridays.' });
     }
 
-    const amount = Number(req.body.amount || 0);
-    if (amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+    const Body = z.object({ amount: z.number().int().positive() });
+    const parsed = Body.safeParse({ amount: Number(req.body.amount) });
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid amount' });
+    const amount = parsed.data.amount;
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     const available = Math.max(user.totalDeposits + user.totalEarnings - user.totalWithdrawals, 0);

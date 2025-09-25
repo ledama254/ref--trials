@@ -79,11 +79,12 @@ export default function DashboardPage() {
             </div>
 
             {/* Referral Section */}
-            <div className="card">
+            <div className="card" id="referrals">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-semibold">Invite friends to earn KES 100 each!</div>
                   <div className="text-sm text-gray-500">Send this code to your friends. Each activation earns you 100 KES.</div>
+                  <div className="text-xs mt-1">Your code: <span className="font-mono">{data.referralCode}</span></div>
                 </div>
                 <button className="btn-primary" onClick={() => navigator.clipboard.writeText((data as any)?.referralCode || '')}>Invite Friends</button>
               </div>
@@ -120,7 +121,7 @@ export default function DashboardPage() {
 
             {/* Profile Section */}
             <div className="grid md:grid-cols-2 gap-3">
-              <div className="card">
+              <div className="card" id="profile">
                 <div className="font-semibold">Profile</div>
                 <div className="text-sm text-gray-500">Level: {data.level}</div>
                 <div className="mt-3 flex gap-2">
@@ -142,7 +143,7 @@ export default function DashboardPage() {
 
             {/* Deposit & Withdraw */}
             <div className="grid md:grid-cols-2 gap-3">
-              <div className="card">
+              <div className="card" id="deposit">
                 <div className="font-semibold mb-2">Deposit</div>
                 <div className="flex gap-2">
                   <input className="input" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value)} />
@@ -150,7 +151,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-xs text-gray-500 mt-2">STK push will be sent to your registered phone.</div>
               </div>
-              <div className="card">
+              <div className="card" id="withdraw">
                 <div className="font-semibold mb-2">Withdraw</div>
                 <div className="flex gap-2">
                   <input className="input" placeholder="Amount" value={wamount} onChange={e => setWamount(e.target.value)} />
@@ -170,7 +171,7 @@ export default function DashboardPage() {
                   <li>Placeholder Leader #3</li>
                 </ol>
               </div>
-              <div className="card">
+              <div className="card" id="notifications">
                 <div className="font-semibold mb-2">Notifications</div>
                 <ul className="text-sm space-y-1">
                   {(data.notifications || []).map((n: any) => (

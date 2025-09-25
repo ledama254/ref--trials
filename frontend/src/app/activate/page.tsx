@@ -13,7 +13,7 @@ export default function ActivatePage() {
     setLoading(true);
     try {
       // Triggers STK push (mock in dev). Backend callback will mark SUCCESS.
-      await Auth.activate();
+      await Auth.activate(referralCode || undefined);
       // In dev mock, success happens shortly after. Show confetti-like success once presumed.
       setTimeout(() => setSuccess(true), 1500);
     } catch (e: any) {

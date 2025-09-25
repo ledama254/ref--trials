@@ -1,10 +1,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-import { nanoid } from 'nanoid';
+import { z } from 'zod';
 import { Payments } from '../services/payments.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma.js';
 
 // Helper to create JWT
 function signToken(user) {
@@ -16,7 +14,13 @@ function signToken(user) {
 // POST /api/auth/register
 export async function register(req, res) {
   try {
-    const { fullName, phone, password, referralCode } = req.body;
+    const RegisterSchema = z.object({
+      fullName: z.string().min(2, 'Enter your full name'),
+      phone: z.string().min(7, 'Enter a valid phone number').max(20),
+      password: z.string().min(6, 'Password must be at least 6 characters'),
+      referralCode: z.string().length(8, 'Referral code must be 8 digits').optional(),
+    });
+    const { fullName, phone, password, referralCode } = RegisterSchema.parse(req.body || {});
 
     if (!fullName || !phone || !password) return res.status(400).json({ error: 'Missing fields' });
 
@@ -60,7 +64,11 @@ export async function register(req, res) {
 // POST /api/auth/login
 export async function login(req, res) {
   try {
-    const { phone, password } = req.body;
+    const LoginSchema = z.object({
+      phone: z.string().min(7),
+      password: z.string().min(1),
+    });
+    const { phone, password } = LoginSchema.parse(req.body || {});
     const user = await prisma.user.findUnique({ where: { phone } });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
@@ -79,7 +87,8 @@ export async function login(req, res) {
 export async function activateAccount(req, res) {
   try {
     const userId = req.user.id;
-    const { referralCode } = req.body || {};
+    const ActivateSchema = z.object({ referralCode: z.string().length(8).optional() });
+    const { referralCode } = ActivateSchema.parse(req.body || {});
     let user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.isActive) return res.status(400).json({ error: 'Account already active' });

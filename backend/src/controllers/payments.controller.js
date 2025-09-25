@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma.js';
 
 // Public callback used by M-Pesa (or mock) to confirm STK push results
 export async function mpesaCallback(req, res) {
@@ -28,8 +26,16 @@ export async function mpesaCallback(req, res) {
         if (tx.type === 'ACTIVATION' && user.referrerCode) {
           const referrer = await prisma.user.findUnique({ where: { referralCode: user.referrerCode } });
           if (referrer) {
-            await prisma.user.update({ where: { id: referrer.id }, data: { totalEarnings: { increment: 100 } } });
-            await prisma.notification.create({ data: { userId: referrer.id, message: `Congrats, ${user.fullName} just joined with your code! You earned KES 100.` } });
+            // Determine referral bonus from settings/env
+            let bonus = 100;
+            try {
+              const setting = await prisma.setting.findFirst();
+              if (setting?.referralBonusKES) bonus = setting.referralBonusKES;
+            } catch {}
+            bonus = Number(process.env.REFERRAL_BONUS_KES || bonus);
+
+            await prisma.user.update({ where: { id: referrer.id }, data: { totalEarnings: { increment: bonus } } });
+            await prisma.notification.create({ data: { userId: referrer.id, message: `Congrats, ${user.fullName} just joined with your code! You earned KES ${bonus}.` } });
           }
         }
       }
