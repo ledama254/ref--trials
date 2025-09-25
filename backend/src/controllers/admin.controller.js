@@ -1,4 +1,5 @@
 import { prisma } from '../db/prisma.js';
+import { Payments } from '../services/payments.js';
 
 export async function getAllUsers(_req, res) {
   const users = await prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
@@ -11,10 +12,25 @@ export async function getAllTransactions(_req, res) {
 }
 
 export async function approveWithdrawal(req, res) {
-  // Placeholder: an approval flow would exist in real payouts
-  const { id } = req.params;
-  const tx = await prisma.transaction.update({ where: { id }, data: { status: 'SUCCESS' } });
-  res.json({ message: 'Withdrawal approved', tx });
+  try {
+    const { id } = req.params;
+    const tx = await prisma.transaction.findUnique({ where: { id } });
+    if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+    if (tx.type !== 'WITHDRAWAL') return res.status(400).json({ error: 'Not a withdrawal transaction' });
+    if (tx.status !== 'PENDING') return res.status(400).json({ error: 'Transaction not pending' });
+
+    const user = await prisma.user.findUnique({ where: { id: tx.userId } });
+
+    const payout = await Payments.payoutB2C({ phone: user.phone, amount: tx.amount, txId: tx.id, remarks: 'User withdrawal' });
+    const updated = await prisma.transaction.update({
+      where: { id },
+      data: { metadata: { ...(tx.metadata || {}), payout } }
+    });
+    return res.json({ message: 'Payout initiated. Await M-Pesa confirmation.', tx: updated });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Approval failed' });
+  }
 }
 
 export async function getSettings(_req, res) {

@@ -99,21 +99,12 @@ export async function withdraw(req, res) {
     if (amount > available) return res.status(400).json({ error: 'Insufficient balance' });
 
     // Reactivation rule: if total withdrawals > 2000, require re-activation
-    if (!user.isActive) return res.status(400).json({ error: 'Your account is not active. Deposit KES 300 to reactivate.' });
+    if (!user.isActive) return res.status(400).json({ error: 'Your account is not active. Deposit the activation fee to reactivate.' });
 
     const tx = await prisma.transaction.create({ data: { type: 'WITHDRAWAL', amount, status: 'PENDING', userId: user.id } });
 
-    // In real integration, initiate B2C payout. Here we just mark success for mock.
-    await prisma.transaction.update({ where: { id: tx.id }, data: { status: 'SUCCESS' } });
-    await prisma.user.update({ where: { id: user.id }, data: { totalWithdrawals: { increment: amount } } });
-
-    // Deactivate if threshold exceeded
-    const updated = await prisma.user.findUnique({ where: { id: user.id } });
-    if (updated.totalWithdrawals > 2000) {
-      await prisma.user.update({ where: { id: user.id }, data: { isActive: false } });
-    }
-
-    res.json({ message: 'Withdrawal requested and approved', txId: tx.id });
+    // Admin must approve this withdrawal (may trigger M-Pesa B2C payout).
+    res.json({ message: 'Withdrawal request received. Await admin approval.', txId: tx.id });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Withdrawal failed' });

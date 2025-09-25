@@ -1,7 +1,13 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+// Prefer Neon direct connection for migrations/seed if provided
+const prisma = new PrismaClient({
+  datasources: {
+    db: { url: process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL }
+  }
+});
 
 async function main() {
   // Ensure settings exist

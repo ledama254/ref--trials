@@ -18,11 +18,11 @@
       </div>
     </nav>
 
-    <div class="card" style="max-width:620px; margin:0 auto;">
+    <div class="card max-w-620 mx-auto">
       <h2>Create your account</h2>
-      <p class="small">You will receive an activation prompt after registration.</p>
+      <p class="small">You will receive an M‑Pesa activation prompt after registration.</p>
       <div id="msg"></div>
-      <form id="form" onsubmit="return false;" style="margin-top:12px;" >
+      <form id="form" onsubmit="return false;" class="mt-12" >
         <div class="grid grid-2">
           <div>
             <label for="fullName">Full Name</label>
@@ -33,7 +33,7 @@
             <input id="phone" class="input" placeholder="07XXXXXXXX" required />
           </div>
         </div>
-        <div class="grid grid-2" style="margin-top:10px;">
+        <div class="grid grid-2 mt-10">
           <div>
             <label for="password">Password</label>
             <input id="password" type="password" class="input" placeholder="••••••••" required />
@@ -43,13 +43,13 @@
             <input id="confirm" type="password" class="input" placeholder="••••••••" required />
           </div>
         </div>
-        <div style="margin-top:10px;">
+        <div class="mt-10">
           <label for="referralCode">Referral Code (optional)</label>
           <input id="referralCode" class="input" placeholder="12345678" />
         </div>
-        <div class="row" style="margin-top:14px; justify-content:space-between;">
-          <button class="btn btn-secondary" onclick="window.location.href='./login.html'">I have an account</button>
-          <button class="btn btn-primary" id="submit">Register</button>
+        <div class="row mt-14 space-between">
+          <button type="button" class="btn btn-secondary" onclick="window.location.href='./login.html'">I have an account</button>
+          <button type="button" class="btn btn-primary" id="submit">Register</button>
         </div>
       </form>
     </div>
